@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>User Management Dashboard</title>
+
+<style>
+body{
+font-family: Arial;
+background:#f4f6f9;
+margin:40px;
+}
+
+h1{
+color:#333;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 4px 8px rgba(0,0,0,0.1);
+}
+
+button{
+padding:8px 14px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+.add-btn{
+background:#28a745;
+color:white;
+}
+
+.delete-btn{
+background:#dc3545;
+color:white;
+}
+
+.refresh-btn{
+background:#007bff;
+color:white;
+margin-bottom:15px;
+}
+
+input{
+padding:8px;
+margin-right:10px;
+margin-bottom:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:left;
+}
+
+.status{
+padding:6px 10px;
+border-radius:6px;
+font-size:12px;
+}
+
+.active{
+background:#d4edda;
+color:#155724;
+}
+
+.inactive{
+background:#f8d7da;
+color:#721c24;
+}
+
+.dbstatus{
+margin-bottom:15px;
+padding:10px;
+background:#eef;
+border-radius:6px;
+}
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>User Management Dashboard</h1>
+
+<div class="dbstatus" id="dbStatus">
+Checking database status...
+</div>
+
+<button class="refresh-btn" onclick="loadUsers()">Refresh Users</button>
+
+<h3>Add User</h3>
+
+<input type="text" id="name" placeholder="Name">
+<input type="email" id="email" placeholder="Email">
+<input type="text" id="role" placeholder="Role">
+
+<button class="add-btn" onclick="addUser()">Add User</button>
+
+
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Email</th>
+<th>Role</th>
+<th>Status</th>
+<th>Created</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="userTable"></tbody>
+
+</table>
+
+</div>
+
+
+<script>
+
+const API = "http://localhost:3001/api";
+
+
+async function checkDB() {
+const res = await fetch(`${API}/ping`);
+const data = await res.json();
+
+document.getElementById("dbStatus").innerHTML =
+`DB Status: <b>${data.status}</b> | Host: ${data.host || "N/A"} | Latency: ${data.latency || 0}ms`;
+}
+
+
+async function loadUsers(){
+
+const res = await fetch(`${API}/users`);
+const data = await res.json();
+
+const table = document.getElementById("userTable");
+table.innerHTML = "";
+
+data.users.forEach(user => {
+
+table.innerHTML += `
+<tr>
+<td>${user.name}</td>
+<td>${user.email}</td>
+<td>${user.role}</td>
+<td>
+<span class="status ${user.status}">
+${user.status}
+</span>
+</td>
+<td>${new Date(user.createdAt).toLocaleDateString()}</td>
+<td>
+<button class="delete-btn" onclick="deleteUser('${user._id}')">
+Delete
+</button>
+</td>
+</tr>
+`;
+
+});
+
+}
+
+
+
+async function addUser(){
+
+const name = document.getElementById("name").value;
+const email = document.getElementById("email").value;
+const role = document.getElementById("role").value;
+
+await fetch(`${API}/users`,{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({name,email,role})
+});
+
+document.getElementById("name").value="";
+document.getElementById("email").value="";
+document.getElementById("role").value="";
+
+loadUsers();
+}
+
+
+
+async function deleteUser(id){
+
+await fetch(`${API}/users/${id}`,{
+method:"DELETE"
+});
+
+loadUsers();
+
+}
+
+
+checkDB();
+loadUsers();
+
+</script>
+
+
+</body>
+</html>
